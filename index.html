@@ -1,0 +1,614 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI 구독료 사업비 계산기</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f2ff;
+      --card: rgba(255, 255, 255, .94);
+      --text: #21183d;
+      --muted: #716986;
+      --line: #ded5f2;
+      --primary: #6937ed;
+      --primary-dark: #4820c8;
+      --primary-soft: #eee8ff;
+      --blue: #667eea;
+      --mint: #9adfdc;
+      --good-bg: #e7f8f1;
+      --good: #147451;
+      --warn-bg: #f2eaff;
+      --warn: #6b32c9;
+      --off-bg: #f0eef5;
+      --off: #625d6e;
+      --danger: #bc2f46;
+      --radius: 24px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 8% 8%, rgba(192, 139, 255, .24), transparent 28%),
+        radial-gradient(circle at 94% 15%, rgba(105, 126, 234, .18), transparent 27%),
+        linear-gradient(180deg, #faf8ff 0%, var(--bg) 55%, #f2f7ff 100%);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", sans-serif;
+      line-height: 1.5;
+    }
+
+    button, input { font: inherit; }
+    button { border: 0; cursor: pointer; }
+    p { margin: 0; }
+
+    .wrap {
+      width: min(1040px, calc(100% - 32px));
+      margin: 42px auto 72px;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      min-height: 190px;
+      padding: 44px 42px;
+      border-radius: 32px;
+      background: linear-gradient(118deg, #3f1bbd 0%, #7338f2 52%, #6d8ee9 100%);
+      box-shadow: 0 22px 54px rgba(73, 35, 172, .22);
+      color: #fff;
+    }
+    .hero::before,
+    .hero::after {
+      content: "";
+      position: absolute;
+      border-radius: 999px;
+      filter: blur(.2px);
+      pointer-events: none;
+    }
+    .hero::before {
+      width: 116px;
+      height: 260px;
+      right: 148px;
+      top: -102px;
+      background: linear-gradient(180deg, rgba(216, 174, 255, .9), rgba(111, 58, 241, .32));
+      box-shadow: 156px 142px 0 rgba(157, 226, 222, .55);
+      transform: rotate(10deg);
+    }
+    .hero::after {
+      width: 104px;
+      height: 104px;
+      right: 50px;
+      bottom: -28px;
+      background: rgba(203, 168, 255, .72);
+      box-shadow: -178px -12px 0 rgba(69, 35, 230, .7);
+    }
+    .hero-copy { position: relative; z-index: 1; max-width: 650px; }
+    .eyebrow { margin-bottom: 10px; font-size: 13px; font-weight: 800; letter-spacing: .08em; opacity: .8; }
+    h1 { margin: 0 0 10px; font-size: clamp(30px, 5vw, 44px); line-height: 1.16; letter-spacing: -.04em; }
+    h2 { margin: 0; font-size: 22px; }
+    .lead { max-width: 560px; color: rgba(255, 255, 255, .82); }
+
+    .panel,
+    .payment-card {
+      margin-top: 20px;
+      background: var(--card);
+      border: 1px solid rgba(202, 190, 232, .78);
+      box-shadow: 0 14px 38px rgba(64, 43, 111, .08);
+      backdrop-filter: blur(12px);
+    }
+    .panel { padding: 26px; border-radius: var(--radius); }
+
+    .section-heading { margin-bottom: 18px; }
+    .section-heading p { margin-top: 4px; color: var(--muted); font-size: 14px; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    label { display: block; font-weight: 750; }
+    .hint { display: block; margin-top: 6px; color: var(--muted); font-size: 13px; font-weight: 400; line-height: 1.45; }
+
+    input {
+      width: 100%;
+      margin-top: 7px;
+      padding: 13px 14px;
+      border: 1px solid #cfc4e5;
+      border-radius: 13px;
+      background: rgba(255, 255, 255, .96);
+      color: var(--text);
+      font-weight: 650;
+      transition: border-color .18s ease, box-shadow .18s ease;
+    }
+    input:focus { outline: 0; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(105, 55, 237, .13); }
+    input:disabled { background: #f3f0f8; color: #5b5570; cursor: not-allowed; }
+
+    .payments-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+      margin: 34px 2px 6px;
+    }
+    .payments-head p { margin-top: 4px; color: var(--muted); font-size: 14px; }
+
+    .payment-card { overflow: hidden; border-radius: 28px; }
+    .payment-card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 20px 24px;
+      background: linear-gradient(90deg, rgba(238, 232, 255, .9), rgba(232, 243, 255, .66));
+      border-bottom: 1px solid var(--line);
+    }
+    .payment-index { display: block; color: var(--primary); font-size: 12px; font-weight: 850; letter-spacing: .06em; }
+    .payment-name { margin: 2px 0 0; font-size: 20px; line-height: 1.25; }
+    .payment-fields { padding: 24px; }
+    .field-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr 1fr 1fr;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .remove {
+      padding: 9px 13px;
+      border-radius: 11px;
+      background: rgba(255, 255, 255, .82);
+      color: var(--danger);
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .calculate-one,
+    .add {
+      border-radius: 14px;
+      font-weight: 850;
+      transition: transform .16s ease, box-shadow .16s ease;
+    }
+    .calculate-one {
+      width: 100%;
+      margin-top: 20px;
+      padding: 15px;
+      background: linear-gradient(100deg, var(--primary-dark), var(--primary) 58%, var(--blue));
+      box-shadow: 0 10px 24px rgba(92, 47, 212, .22);
+      color: #fff;
+      font-size: 16px;
+    }
+    .calculate-one:hover,
+    .add:hover { transform: translateY(-1px); }
+    .add {
+      display: block;
+      width: 100%;
+      margin-top: 18px;
+      padding: 15px;
+      border: 1px dashed #a990df;
+      background: rgba(244, 239, 255, .78);
+      color: var(--primary-dark);
+      font-size: 16px;
+    }
+
+    .error {
+      display: none;
+      margin-top: 16px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: #fff0f2;
+      color: var(--danger);
+      font-weight: 700;
+    }
+
+    .inline-result {
+      padding: 26px 24px 24px;
+      border-top: 1px solid var(--line);
+      background: linear-gradient(145deg, rgba(249, 247, 255, .94), rgba(243, 249, 255, .98));
+    }
+    .inline-result[hidden] { display: none; }
+    .result-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; }
+    .result-head h3 { margin: 0; font-size: 16px; color: var(--muted); }
+    .badge { padding: 5px 11px; border-radius: 999px; font-size: 13px; font-weight: 850; white-space: nowrap; }
+    .badge.full { background: var(--good-bg); color: var(--good); }
+    .badge.partial { background: var(--warn-bg); color: var(--warn); }
+    .badge.none { background: var(--off-bg); color: var(--off); }
+
+    .result-amount-wrap { padding: 22px; border-radius: 20px; background: #fff; box-shadow: inset 0 0 0 1px rgba(210, 198, 237, .9); }
+    .result-label { display: block; color: #594f72; font-size: 14px; font-weight: 750; }
+    .result-money-row { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px 12px; margin-top: 3px; }
+    .result-money { font-size: clamp(34px, 7vw, 50px); line-height: 1.15; letter-spacing: -.04em; color: var(--primary-dark); }
+    .outside-inline { color: var(--muted); font-size: 15px; font-weight: 700; }
+    .rounding-note { display: block; margin-top: 8px; color: var(--muted); font-size: 13px; }
+
+    .result-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin: 14px 0 0;
+    }
+    .result-meta > div { padding: 14px; border-radius: 14px; background: rgba(255, 255, 255, .72); }
+    .result-meta dt { color: var(--muted); font-size: 12px; font-weight: 750; }
+    .result-meta dd { margin: 4px 0 0; color: #33294c; font-size: 14px; font-weight: 750; overflow-wrap: anywhere; }
+    .formula { margin-top: 12px; padding: 11px 13px; border-radius: 12px; background: rgba(233, 228, 244, .62); color: #514865; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; overflow-wrap: anywhere; }
+
+    .notice {
+      margin-top: 22px;
+      padding: 16px 18px;
+      border-radius: 16px;
+      background: rgba(235, 229, 255, .78);
+      color: #554875;
+      font-size: 13px;
+    }
+
+    @media (max-width: 820px) {
+      .hero { min-height: 210px; padding: 34px 28px; }
+      .hero::before { right: 34px; opacity: .6; }
+      .hero::after { opacity: .5; }
+      .field-grid { grid-template-columns: 1fr 1fr; }
+      .field-grid .memo, .field-grid .amount { grid-column: 1 / -1; }
+      .result-meta { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 20px, 1040px); margin-top: 10px; }
+      .hero { padding: 30px 22px; border-radius: 24px; }
+      .hero::before, .hero::after { opacity: .28; }
+      .panel { padding: 20px; }
+      .grid, .field-grid { grid-template-columns: 1fr; }
+      .field-grid .memo, .field-grid .amount { grid-column: auto; }
+      .payment-card-head, .payment-fields, .inline-result { padding-left: 18px; padding-right: 18px; }
+      .result-amount-wrap { padding: 18px; }
+      .result-money-row { align-items: flex-start; flex-direction: column; }
+      .payments-head { margin-top: 28px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">AI SUBSCRIPTION CALCULATOR</p>
+        <h1>AI 구독료 사업비 계산기</h1>
+        <p class="lead">카드 청구 건마다 사업기간에 해당하는 결제액을 따로 계산합니다.</p>
+      </div>
+    </header>
+
+    <section class="panel">
+      <div class="section-heading">
+        <h2>사업 기간</h2>
+        <p>모든 결제 건에 공통으로 적용됩니다.</p>
+      </div>
+      <div class="grid">
+        <label>
+          교부일
+          <input id="grantDate" type="text" class="date-input" inputmode="numeric" maxlength="10" placeholder="YYYY-MM-DD" autocomplete="off">
+          <span class="hint">2026-10-01~2026-12-31 중 실제 교부일을 입력하세요.</span>
+        </label>
+        <label>
+          사업 종료일
+          <input type="text" value="2026-12-31" disabled>
+          <span class="hint">현재 기준 고정값이며 사용자가 수정할 수 없습니다.</span>
+        </label>
+      </div>
+    </section>
+
+    <section aria-labelledby="paymentsTitle">
+      <div class="payments-head">
+        <div>
+          <h2 id="paymentsTitle">결제 건별 계산</h2>
+          <p>각 결제 건의 입력과 결과가 한 카드 안에 표시됩니다.</p>
+        </div>
+      </div>
+      <div id="paymentCards"></div>
+      <button type="button" class="add" id="addPayment">+ 결제 건 추가</button>
+    </section>
+
+    <p class="notice">카드 청구액을 사업기간 해당분과 기간 외 금액으로 구분합니다. 일할계산 금액은 곱셈과 나눗셈 후 10원 미만을 한 번 절사합니다. 부가세는 계산하지 않으며 e나라도움에서 별도로 처리해야 합니다.</p>
+  </main>
+
+  <template id="paymentTemplate">
+    <article class="payment-card">
+      <div class="payment-card-head">
+        <div>
+          <span class="payment-index">결제 건 1</span>
+          <h3 class="payment-name">새 결제 건</h3>
+        </div>
+        <button type="button" class="remove">삭제</button>
+      </div>
+      <div class="payment-fields">
+        <div class="field-grid">
+          <label class="memo">구독명 또는 메모<input type="text" class="service" placeholder="예: ChatGPT Plus"></label>
+          <label>결제일<input type="text" class="payment-date date-input" inputmode="numeric" maxlength="10" placeholder="YYYY-MM-DD" autocomplete="off"></label>
+          <label>다음 결제일<input type="text" class="next-date date-input" inputmode="numeric" maxlength="10" placeholder="자동 입력" autocomplete="off"><span class="hint next-date-hint">결제일 입력 시 자동 입력되며 수정할 수 있습니다.</span></label>
+          <label class="amount">카드 청구액(원)<input type="text" class="charge" inputmode="numeric" placeholder="예: 31000"><span class="hint">카드사에 실제 청구된 원화 금액을 입력하세요.</span></label>
+        </div>
+        <div class="error" role="alert"></div>
+        <button type="button" class="calculate-one">이 결제 건 계산하기</button>
+      </div>
+      <section class="inline-result" hidden aria-live="polite">
+        <div class="result-head">
+          <h3>계산 결과</h3>
+          <span class="badge"></span>
+        </div>
+        <div class="result-amount-wrap">
+          <span class="result-label">사업기간 해당 결제액</span>
+          <div class="result-money-row">
+            <strong class="result-money"></strong>
+            <span class="outside-inline"></span>
+          </div>
+          <span class="rounding-note"></span>
+        </div>
+        <dl class="result-meta">
+          <div><dt>카드 청구액</dt><dd class="result-charge"></dd></div>
+          <div><dt>결제 이용기간</dt><dd class="result-full-period"></dd></div>
+          <div><dt>사업기간 해당 기간</dt><dd class="result-eligible-period"></dd></div>
+        </dl>
+        <div class="formula"></div>
+      </section>
+    </article>
+  </template>
+
+  <script>
+    const PROGRAM_START = '2026-10-01';
+    const PROGRAM_END = '2026-12-31';
+    const PROGRAM_END_EXCLUSIVE = '2027-01-01';
+    const DAY_MS = 24 * 60 * 60 * 1000;
+
+    const paymentCards = document.querySelector('#paymentCards');
+    const template = document.querySelector('#paymentTemplate');
+
+    function parseDate(dateText) {
+      const [year, month, day] = dateText.split('-').map(Number);
+      return Date.UTC(year, month - 1, day);
+    }
+
+    function formatDate(dateText) {
+      return dateText;
+    }
+
+    function formatDateInput(value) {
+      const digits = value.replace(/[^0-9]/g, '').slice(0, 8);
+      if (digits.length < 8) return digits;
+      return `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6)}`;
+    }
+
+    function isValidDate(dateText) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateText)) return false;
+      const [year, month, day] = dateText.split('-').map(Number);
+      const date = new Date(Date.UTC(year, month - 1, day));
+      return date.getUTCFullYear() === year
+        && date.getUTCMonth() === month - 1
+        && date.getUTCDate() === day;
+    }
+
+    function addOneCalendarMonth(dateText) {
+      const [year, month, day] = dateText.split('-').map(Number);
+      const targetMonth = new Date(Date.UTC(year, month, 1));
+      const targetYear = targetMonth.getUTCFullYear();
+      const targetMonthIndex = targetMonth.getUTCMonth();
+      const lastDay = new Date(Date.UTC(targetYear, targetMonthIndex + 1, 0)).getUTCDate();
+      const result = new Date(Date.UTC(targetYear, targetMonthIndex, Math.min(day, lastDay)));
+      return `${result.getUTCFullYear()}-${String(result.getUTCMonth() + 1).padStart(2, '0')}-${String(result.getUTCDate()).padStart(2, '0')}`;
+    }
+
+    function enableDateFormatting(input) {
+      input.addEventListener('click', event => {
+        if (event.target.value) event.target.select();
+      });
+      input.addEventListener('input', event => {
+        event.target.value = formatDateInput(event.target.value);
+      });
+    }
+
+    function previousDate(dateText) {
+      const date = new Date(parseDate(dateText) - DAY_MS);
+      return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
+    }
+
+    function dayDifference(start, endExclusive) {
+      return Math.round((parseDate(endExclusive) - parseDate(start)) / DAY_MS);
+    }
+
+    function won(value) {
+      return `${Math.trunc(value).toLocaleString('ko-KR')}원`;
+    }
+
+    function oneWonAmount(value) {
+      return Math.floor(value);
+    }
+
+    function cleanAmount(value) {
+      return Number(value.replace(/[^0-9]/g, ''));
+    }
+
+    function hideCardResult(card) {
+      card.querySelector('.inline-result').hidden = true;
+      const error = card.querySelector('.error');
+      error.style.display = 'none';
+      error.textContent = '';
+    }
+
+    function updateCardIndexes() {
+      [...paymentCards.children].forEach((card, index) => {
+        card.querySelector('.payment-index').textContent = `결제 건 ${index + 1}`;
+      });
+    }
+
+    function addPaymentCard() {
+      const card = template.content.firstElementChild.cloneNode(true);
+      const serviceInput = card.querySelector('.service');
+      const paymentName = card.querySelector('.payment-name');
+      const paymentDateInput = card.querySelector('.payment-date');
+      const nextDateInput = card.querySelector('.next-date');
+      const nextDateHint = card.querySelector('.next-date-hint');
+      const chargeInput = card.querySelector('.charge');
+
+      enableDateFormatting(paymentDateInput);
+      enableDateFormatting(nextDateInput);
+
+      serviceInput.addEventListener('input', () => {
+        paymentName.textContent = serviceInput.value.trim() || '새 결제 건';
+      });
+
+      paymentDateInput.addEventListener('input', () => {
+        hideCardResult(card);
+        if (!isValidDate(paymentDateInput.value)) return;
+        if (!nextDateInput.value || nextDateInput.dataset.autoGenerated === 'true') {
+          nextDateInput.value = addOneCalendarMonth(paymentDateInput.value);
+          nextDateInput.dataset.autoGenerated = 'true';
+          nextDateHint.textContent = '자동 입력된 날짜입니다. 실제 다음 결제일과 다르면 수정하세요.';
+        }
+      });
+
+      nextDateInput.addEventListener('input', () => {
+        hideCardResult(card);
+        nextDateInput.dataset.autoGenerated = 'false';
+        nextDateHint.textContent = '직접 수정한 날짜입니다.';
+      });
+
+      card.querySelector('.remove').addEventListener('click', () => {
+        if (paymentCards.children.length === 1) {
+          card.querySelectorAll('input').forEach(input => input.value = '');
+          paymentName.textContent = '새 결제 건';
+          nextDateInput.dataset.autoGenerated = 'false';
+          nextDateHint.textContent = '결제일 입력 시 자동 입력되며 수정할 수 있습니다.';
+          hideCardResult(card);
+          return;
+        }
+        card.remove();
+        updateCardIndexes();
+      });
+
+      chargeInput.addEventListener('input', event => {
+        const digits = event.target.value.replace(/[^0-9]/g, '');
+        event.target.value = digits ? Number(digits).toLocaleString('ko-KR') : '';
+        hideCardResult(card);
+      });
+
+      card.querySelector('.calculate-one').addEventListener('click', () => calculateCard(card));
+      paymentCards.appendChild(card);
+      updateCardIndexes();
+    }
+
+    function calculateTransaction(paymentDate, nextDate, charge) {
+      const totalDays = dayDifference(paymentDate, nextDate);
+      const eligibleStart = paymentDate < PROGRAM_START ? PROGRAM_START : paymentDate;
+      const eligibleEndExclusive = nextDate < PROGRAM_END_EXCLUSIVE ? nextDate : PROGRAM_END_EXCLUSIVE;
+      const eligibleDays = eligibleEndExclusive > eligibleStart
+        ? dayDifference(eligibleStart, eligibleEndExclusive)
+        : 0;
+      const outsideDays = totalDays - eligibleDays;
+      const untruncatedPeriodAmount = (charge * eligibleDays) / totalDays;
+      const periodAmount = eligibleDays === totalDays
+        ? charge
+        : Math.floor(untruncatedPeriodAmount / 10) * 10;
+      const outsideAmount = eligibleDays === 0
+        ? charge
+        : eligibleDays === totalDays
+          ? 0
+          : oneWonAmount((charge * outsideDays) / totalDays);
+
+      return {
+        totalDays,
+        eligibleStart,
+        eligibleEndExclusive,
+        eligibleDays,
+        outsideDays,
+        untruncatedPeriodAmount,
+        periodAmount,
+        outsideAmount,
+        status: eligibleDays === totalDays ? 'full' : eligibleDays > 0 ? 'partial' : 'none'
+      };
+    }
+
+    function showCardError(card, messages) {
+      const error = card.querySelector('.error');
+      error.textContent = messages.map(message => `• ${message}`).join('\n');
+      error.style.whiteSpace = 'pre-line';
+      error.style.display = 'block';
+      card.querySelector('.inline-result').hidden = true;
+    }
+
+    function calculateCard(card) {
+      const grantDate = document.querySelector('#grantDate').value;
+      const paymentDate = card.querySelector('.payment-date').value;
+      const nextDate = card.querySelector('.next-date').value;
+      const charge = cleanAmount(card.querySelector('.charge').value);
+      const errors = [];
+
+      if (!grantDate) errors.push('교부일을 입력하세요.');
+      if (grantDate && !isValidDate(grantDate)) {
+        errors.push('교부일을 YYYY-MM-DD 형식의 실제 날짜로 입력하세요.');
+      }
+      if (isValidDate(grantDate) && (grantDate < PROGRAM_START || grantDate > PROGRAM_END)) {
+        errors.push('교부일은 2026년 10월 1일~12월 31일 사이여야 합니다.');
+      }
+      if (!paymentDate) errors.push('결제일을 입력하세요.');
+      if (paymentDate && !isValidDate(paymentDate)) {
+        errors.push('결제일을 YYYY-MM-DD 형식의 실제 날짜로 입력하세요.');
+      }
+      if (!nextDate) errors.push('다음 결제일을 입력하세요.');
+      if (nextDate && !isValidDate(nextDate)) {
+        errors.push('다음 결제일을 YYYY-MM-DD 형식의 실제 날짜로 입력하세요.');
+      }
+      if (!charge || charge < 1) errors.push('카드 청구액을 입력하세요.');
+      if (isValidDate(grantDate) && isValidDate(paymentDate) && paymentDate < grantDate) {
+        errors.push('결제일은 교부일보다 빠를 수 없습니다.');
+      }
+      if (isValidDate(paymentDate) && isValidDate(nextDate) && nextDate <= paymentDate) {
+        errors.push('다음 결제일은 결제일보다 뒤여야 합니다.');
+      }
+
+      if (errors.length) {
+        showCardError(card, errors);
+        return;
+      }
+
+      const error = card.querySelector('.error');
+      error.style.display = 'none';
+      error.textContent = '';
+
+      const item = {
+        paymentDate,
+        nextDate,
+        charge,
+        ...calculateTransaction(paymentDate, nextDate, charge)
+      };
+      const eligiblePeriod = item.eligibleDays
+        ? `${formatDate(item.eligibleStart)}~${formatDate(previousDate(item.eligibleEndExclusive))} (${item.eligibleDays}일)`
+        : '- (0일)';
+      const formula = item.status === 'full'
+        ? `계산식: ${won(item.charge)} 전액 해당`
+        : item.status === 'partial'
+          ? `계산식: ${item.charge.toLocaleString('ko-KR')} × ${item.eligibleDays} ÷ ${item.totalDays} = ${won(oneWonAmount(item.untruncatedPeriodAmount))} → 10원 미만 절사 ${won(item.periodAmount)}`
+          : `계산식: ${won(item.charge)} × 0일 ÷ ${item.totalDays}일 = 0원`;
+      const statusText = { full: '전액 해당', partial: '일할계산', none: '사업기간 외' };
+      const result = card.querySelector('.inline-result');
+      const badge = result.querySelector('.badge');
+
+      badge.className = `badge ${item.status}`;
+      badge.textContent = statusText[item.status];
+      result.querySelector('.result-money').textContent = won(item.periodAmount);
+      result.querySelector('.outside-inline').textContent = `(기간 외 ${won(item.outsideAmount)})`;
+      result.querySelector('.rounding-note').textContent = item.status === 'partial'
+        ? `10원 미만 절사 전 1원 단위 계산액: ${won(oneWonAmount(item.untruncatedPeriodAmount))}`
+        : '';
+      result.querySelector('.result-charge').textContent = won(item.charge);
+      result.querySelector('.result-full-period').textContent = `${formatDate(item.paymentDate)}~${formatDate(previousDate(item.nextDate))} (${item.totalDays}일)`;
+      result.querySelector('.result-eligible-period').textContent = eligiblePeriod;
+      result.querySelector('.formula').textContent = formula;
+      result.hidden = false;
+    }
+
+    const grantDateInput = document.querySelector('#grantDate');
+    document.querySelector('#addPayment').addEventListener('click', addPaymentCard);
+    enableDateFormatting(grantDateInput);
+    grantDateInput.addEventListener('input', () => {
+      [...paymentCards.children].forEach(hideCardResult);
+    });
+    addPaymentCard();
+  </script>
+</body>
+</html>
