@@ -217,10 +217,24 @@
 
     .result-amount-wrap { padding: 22px; border-radius: 20px; background: #fff; box-shadow: inset 0 0 0 1px rgba(210, 198, 237, .9); }
     .result-label { display: block; color: #594f72; font-size: 14px; font-weight: 750; }
-    .result-money-row { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px 12px; margin-top: 3px; }
-    .result-money { font-size: clamp(34px, 7vw, 50px); line-height: 1.15; letter-spacing: -.04em; color: var(--primary-dark); }
-    .outside-inline { color: var(--muted); font-size: 15px; font-weight: 700; }
+    .enara-values {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .enara-value { padding: 15px; border-radius: 15px; background: #f7f4ff; }
+    .enara-value.primary { background: linear-gradient(135deg, #eee7ff, #edf3ff); }
+    .enara-value span { display: block; color: var(--muted); font-size: 12px; font-weight: 750; }
+    .enara-value strong { display: block; margin-top: 4px; color: #33294c; font-size: 24px; line-height: 1.2; }
+    .enara-value.primary strong { color: var(--primary-dark); font-size: clamp(28px, 5vw, 38px); }
+    .amount-note { display: block; margin-top: 8px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+    .inline-result.full-period .vat-adjustment-note,
+    .inline-result.full-period .execution-note { display: none; }
     .rounding-note { display: block; margin-top: 8px; color: var(--muted); font-size: 13px; }
+    .inline-result.full-period .result-execution,
+    .inline-result.full-period .result-vat { font-size: 20px; line-height: 1.5; }
+    .inline-result.full-period .result-supply { color: var(--primary-dark); font-size: 38px; }
 
     .result-meta {
       display: grid;
@@ -231,7 +245,7 @@
     .result-meta > div { padding: 14px; border-radius: 14px; background: rgba(255, 255, 255, .72); }
     .result-meta dt { color: var(--muted); font-size: 12px; font-weight: 750; }
     .result-meta dd { margin: 4px 0 0; color: #33294c; font-size: 14px; font-weight: 750; overflow-wrap: anywhere; }
-    .formula { margin-top: 12px; padding: 11px 13px; border-radius: 12px; background: rgba(233, 228, 244, .62); color: #514865; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; overflow-wrap: anywhere; }
+    .formula { margin-top: 12px; padding: 11px 13px; border-radius: 12px; background: rgba(233, 228, 244, .62); color: #514865; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; overflow-wrap: anywhere; white-space: pre-line; }
 
     .notice {
       margin-top: 22px;
@@ -248,6 +262,7 @@
       .hero::after { opacity: .5; }
       .field-grid { grid-template-columns: 1fr 1fr; }
       .field-grid .memo, .field-grid .amount { grid-column: 1 / -1; }
+      .enara-values { grid-template-columns: 1fr; }
       .result-meta { grid-template-columns: 1fr; }
     }
 
@@ -260,7 +275,6 @@
       .field-grid .memo, .field-grid .amount { grid-column: auto; }
       .payment-card-head, .payment-fields, .inline-result { padding-left: 18px; padding-right: 18px; }
       .result-amount-wrap { padding: 18px; }
-      .result-money-row { align-items: flex-start; flex-direction: column; }
       .payments-head { margin-top: 28px; }
     }
   </style>
@@ -277,13 +291,12 @@
     <section class="panel">
       <div class="section-heading">
         <h2>사업 기간</h2>
-        <p>모든 결제 건에 공통으로 적용됩니다.</p>
       </div>
       <div class="grid">
         <label>
-          교부일
+          사업비 최초 교부일
           <input id="grantDate" type="text" class="date-input" inputmode="numeric" maxlength="10" placeholder="YYYY-MM-DD" autocomplete="off">
-          <span class="hint">2026-10-01~2026-12-31 중 실제 교부일을 입력하세요.</span>
+          <span class="hint">사업비가 처음 교부된 날짜를 입력하세요. 입력 가능 기간: 2026-10-01~2026-12-31</span>
         </label>
         <label>
           사업 종료일
@@ -297,14 +310,13 @@
       <div class="payments-head">
         <div>
           <h2 id="paymentsTitle">결제 건별 계산</h2>
-          <p>각 결제 건의 입력과 결과가 한 카드 안에 표시됩니다.</p>
         </div>
       </div>
       <div id="paymentCards"></div>
       <button type="button" class="add" id="addPayment">+ 결제 건 추가</button>
     </section>
 
-    <p class="notice">카드 청구액을 사업기간 해당분과 사업기간 외 해당분으로 구분합니다.<br>일할계산 금액은 곱셈과 나눗셈 후 10원 미만을 한 번 절사합니다.<br>표시된 금액은 부가세가 포함된 카드 청구액을 기준으로 계산됩니다.</p>
+    <p class="notice">사업기간 및 단위 조정에 따라 카드 청구액과 집행 참고금액은 다를 수 있습니다.<br>실제 집행 시 사업 지침과 증빙자료를 확인해 주세요.</p>
   </main>
 
   <template id="paymentTemplate">
@@ -332,10 +344,11 @@
           <span class="badge"></span>
         </div>
         <div class="result-amount-wrap">
-          <span class="result-label">사업기간 해당분(부가세 포함)</span>
-          <div class="result-money-row">
-            <strong class="result-money"></strong>
-            <span class="outside-inline"></span>
+          <span class="result-label">e나라도움 입력 참고금액</span>
+          <div class="enara-values">
+            <div class="enara-value primary"><span>집행액(A=B+C)</span><strong class="result-execution"></strong><small class="amount-note execution-note">단위 조정이 반영된 금액</small></div>
+            <div class="enara-value"><span>부가세액(B)</span><strong class="result-vat"></strong><small class="amount-note vat-adjustment-note">기간 안분 및 공급가액 단위 조정 반영</small></div>
+            <div class="enara-value"><span>공급가액(C)</span><strong class="result-supply"></strong><small class="amount-note">10원 미만 절사 반영</small></div>
           </div>
           <span class="rounding-note"></span>
         </div>
@@ -344,7 +357,7 @@
           <div><dt>결제 이용기간</dt><dd class="result-full-period"></dd></div>
           <div><dt>사업기간 해당 기간</dt><dd class="result-eligible-period"></dd></div>
         </dl>
-        <div class="formula"></div>
+        <div class="formula" hidden></div>
       </section>
     </article>
   </template>
@@ -416,6 +429,14 @@
 
     function oneWonAmount(value) {
       return Math.floor(value);
+    }
+
+    function roundDownTen(value) {
+      return Math.floor(value / 10) * 10;
+    }
+
+    function roundUpTen(value) {
+      return Math.ceil(value / 10) * 10;
     }
 
     function cleanAmount(value) {
@@ -499,15 +520,26 @@
         ? dayDifference(eligibleStart, eligibleEndExclusive)
         : 0;
       const outsideDays = totalDays - eligibleDays;
-      const untruncatedPeriodAmount = (charge * eligibleDays) / totalDays;
-      const periodAmount = eligibleDays === totalDays
-        ? charge
-        : Math.floor(untruncatedPeriodAmount / 10) * 10;
-      const outsideAmount = eligibleDays === 0
-        ? charge
-        : eligibleDays === totalDays
-          ? 0
-          : oneWonAmount((charge * outsideDays) / totalDays);
+
+      // 1) 카드 청구액에서 부가세를 먼저 분리하고 전체 공급가액을 보수적으로 확정합니다.
+      const isFullPeriod = eligibleDays === totalDays;
+      const totalVat = isFullPeriod ? Math.ceil(charge / 11) : roundUpTen(charge / 11);
+      const totalSupplyBeforeRounding = charge - totalVat;
+      const totalSupply = roundDownTen(totalSupplyBeforeRounding);
+
+      // 2) 확정된 공급가액을 사업기간 해당 일수로 안분한 뒤 10원 미만을 버립니다.
+      const eligibleSupplyBeforeRounding = eligibleDays > 0
+        ? (totalSupply * eligibleDays) / totalDays
+        : 0;
+      const eligibleSupply = eligibleDays === totalDays
+        ? totalSupply
+        : roundDownTen(eligibleSupplyBeforeRounding);
+
+      // 3) 안분 공급가액을 기준으로 부가세와 e나라도움 입력 집행액을 다시 구성합니다.
+      // 전 기간 해당 건의 실제 부가세는 입력받지 않으므로 입력용 B와 A를 산출하지 않습니다.
+      const eligibleVat = isFullPeriod ? null : eligibleDays > 0 ? roundUpTen(eligibleSupply * 0.1) : 0;
+      const executionAmount = isFullPeriod ? null : eligibleSupply + eligibleVat;
+      const outsideSupply = Math.max(0, totalSupply - eligibleSupply);
 
       return {
         totalDays,
@@ -515,9 +547,14 @@
         eligibleEndExclusive,
         eligibleDays,
         outsideDays,
-        untruncatedPeriodAmount,
-        periodAmount,
-        outsideAmount,
+        totalVat,
+        totalSupplyBeforeRounding,
+        totalSupply,
+        eligibleSupplyBeforeRounding,
+        eligibleSupply,
+        eligibleVat,
+        executionAmount,
+        outsideSupply,
         status: eligibleDays === totalDays ? 'full' : eligibleDays > 0 ? 'partial' : 'none'
       };
     }
@@ -537,12 +574,12 @@
       const charge = cleanAmount(card.querySelector('.charge').value);
       const errors = [];
 
-      if (!grantDate) errors.push('교부일을 입력하세요.');
+      if (!grantDate) errors.push('사업비 최초 교부일을 입력하세요.');
       if (grantDate && !isValidDate(grantDate)) {
-        errors.push('교부일을 YYYY-MM-DD 형식의 실제 날짜로 입력하세요.');
+        errors.push('사업비 최초 교부일을 YYYY-MM-DD 형식의 실제 날짜로 입력하세요.');
       }
       if (isValidDate(grantDate) && (grantDate < PROGRAM_START || grantDate > PROGRAM_END)) {
-        errors.push('교부일은 2026년 10월 1일~12월 31일 사이여야 합니다.');
+        errors.push('사업비 최초 교부일은 2026년 10월 1일~12월 31일 사이여야 합니다.');
       }
       if (!paymentDate) errors.push('결제일을 입력하세요.');
       if (paymentDate && !isValidDate(paymentDate)) {
@@ -554,7 +591,7 @@
       }
       if (!charge || charge < 1) errors.push('카드 청구액을 입력하세요.');
       if (isValidDate(grantDate) && isValidDate(paymentDate) && paymentDate < grantDate) {
-        errors.push('결제일은 교부일보다 빠를 수 없습니다.');
+        errors.push('결제일은 사업비 최초 교부일보다 빠를 수 없습니다.');
       }
       if (isValidDate(paymentDate) && isValidDate(nextDate) && nextDate <= paymentDate) {
         errors.push('다음 결제일은 결제일보다 뒤여야 합니다.');
@@ -578,22 +615,31 @@
       const eligiblePeriod = item.eligibleDays
         ? `${formatDate(item.eligibleStart)}~${formatDate(previousDate(item.eligibleEndExclusive))} (${item.eligibleDays}일)`
         : '- (0일)';
-      const formula = item.status === 'full'
-        ? `계산식: ${won(item.charge)} 전액 해당`
-        : item.status === 'partial'
-          ? `계산식: ${item.charge.toLocaleString('ko-KR')} × ${item.eligibleDays} ÷ ${item.totalDays} = ${won(oneWonAmount(item.untruncatedPeriodAmount))} → 10원 미만 절사 ${won(item.periodAmount)}`
-          : `계산식: ${won(item.charge)} × 0일 ÷ ${item.totalDays}일 = 0원`;
+      const formula = item.status === 'none'
+        ? `사업기간 해당 일수: 0일 → 집행액 0원 / 부가세액 0원 / 공급가액 0원`
+        : item.status === 'full'
+        ? `공급가액: 10원 미만 버림[카드 청구액 − 소수점 올림(카드 청구액 ÷ 11)] = ${won(item.eligibleSupply)}`
+        : [
+            `① 전체 부가세: 10원 단위 올림(${item.charge.toLocaleString('ko-KR')} ÷ 11) = ${won(item.totalVat)}`,
+            `② 전체 공급가액: 10원 미만 버림(${item.charge.toLocaleString('ko-KR')} - ${item.totalVat.toLocaleString('ko-KR')}) = ${won(item.totalSupply)}`,
+            `③ 기간 안분 공급가액: 10원 미만 버림(${item.totalSupply.toLocaleString('ko-KR')} × ${item.eligibleDays} ÷ ${item.totalDays}) = ${won(item.eligibleSupply)}`,
+            `④ e나라도움 입력: 집행액 ${won(item.executionAmount)} = 부가세액 ${won(item.eligibleVat)} + 공급가액 ${won(item.eligibleSupply)}`
+          ].join('\n');
       const statusText = { full: '전액 해당', partial: '일할계산', none: '사업기간 외' };
       const result = card.querySelector('.inline-result');
       const badge = result.querySelector('.badge');
 
       badge.className = `badge ${item.status}`;
       badge.textContent = statusText[item.status];
-      result.querySelector('.result-money').textContent = won(item.periodAmount);
-      result.querySelector('.outside-inline').textContent = `(사업기간 외 해당분·부가세 포함: ${won(item.outsideAmount)})`;
-      result.querySelector('.rounding-note').textContent = item.status === 'partial'
-        ? `10원 미만 절사 전 1원 단위 계산액: ${won(oneWonAmount(item.untruncatedPeriodAmount))}`
-        : '';
+      result.classList.toggle('full-period', item.status === 'full');
+      result.querySelector('.result-execution').textContent = item.status === 'full'
+        ? '부가세액 + 공급가액' : won(item.executionAmount);
+      result.querySelector('.result-vat').textContent = item.status === 'full'
+        ? '실제 청구된 부가세액' : won(item.eligibleVat);
+      result.querySelector('.result-supply').textContent = won(item.eligibleSupply);
+      result.querySelector('.rounding-note').textContent = item.status === 'full'
+          ? '부가세액(B)은 실제 청구된 부가세 금액을 입력하고, 집행액(A)은 B와 표시된 공급가액(C)을 합산하세요.'
+          : '';
       result.querySelector('.result-charge').textContent = won(item.charge);
       result.querySelector('.result-full-period').textContent = `${formatDate(item.paymentDate)}~${formatDate(previousDate(item.nextDate))} (${item.totalDays}일)`;
       result.querySelector('.result-eligible-period').textContent = eligiblePeriod;
